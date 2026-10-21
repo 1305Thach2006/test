@@ -45,6 +45,7 @@ RUN mkdir -p storage/app/private storage/app/public \
     storage/framework/testing storage/framework/views \
     storage/logs bootstrap/cache \
     && rm -f bootstrap/cache/*.php \
+    && sed -i 's/\r$//' docker/entrypoint.sh \
     && chown -R appuser:appgroup storage bootstrap/cache \
     && chmod +x docker/entrypoint.sh
 

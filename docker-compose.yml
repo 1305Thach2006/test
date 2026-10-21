@@ -23,10 +23,21 @@ services:
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: 2
+      OLLAMA_NUM_PARALLEL: 2
+      OLLAMA_KEEP_ALIVE: "30m"
     ports:
       - "11434:11434"
     volumes:
       - ollamadata:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     healthcheck:
       test: ["CMD-SHELL", "ollama list || exit 1"]
       interval: 10s
@@ -86,7 +97,7 @@ services:
       DB_HOST: postgres
       DATABASE_URL: postgres://acc:acc@postgres:5432/acc
       LLM_BASE_URL: http://ollama:11434/v1
-    command: ["php", "artisan", "queue:work", "--tries=2", "--timeout=180", "--sleep=2"]
+    command: ["php", "artisan", "queue:work", "--tries=2", "--timeout=300", "--sleep=1"]
 
 volumes:
   pgdata:

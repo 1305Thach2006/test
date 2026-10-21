@@ -20,12 +20,18 @@ class OpenAiCompatibleProvider implements LlmProviderInterface
     ) {}
 
     /**
-     * Gọi endpoint /chat/completions tương thích chuẩn OpenAI của Ollama.
+     * Gọi endpoint sinh văn bản của Ollama hoặc OpenAI-compatible API.
      */
     public function chat(array $messages, array $opts = []): string
     {
         $thinking = (bool) ($opts['thinking'] ?? false);
         $temperature = (float) ($opts['temperature'] ?? 0.2);
+
+        // Khi kết nối tới Ollama (qwen3:4b / qwen3:8b), sử dụng /api/generate (raw ChatML + prefill </think>)
+        // để tắt triệt để chuỗi suy luận <think> dài hàng nghìn token khi trích xuất JSON có cấu trúc (mục 4.1 PLAN.md)
+        if ($this->isOllamaEndpoint() && (! $thinking || isset($opts['format']))) {
+            return $this->chatViaOllamaRaw($messages, $temperature, $opts);
+        }
 
         // Mặc định tắt chế độ thinking của Qwen3 cho tác vụ trích xuất, chỉ bật khi chấm phỏng vấn (mục 4.1 PLAN.md)
         $preparedMessages = $this->applyThinkingDirective($messages, $thinking);
@@ -69,6 +75,85 @@ class OpenAiCompatibleProvider implements LlmProviderInterface
 
         // Loại bỏ thẻ <think>...</think> nếu model có sinh ra trong chế độ suy luận
         return trim((string) preg_replace('/<think>.*?<\/think>/s', '', $content));
+    }
+
+    /**
+     * Gọi trực tiếp /api/generate của Ollama với raw ChatML prompt (đóng sẵn <think></think>) và GBNF JSON Schema.
+     *
+     * @param array<int, array{role: string, content: string}> $messages
+     * @param array<string, mixed> $opts
+     */
+    private function chatViaOllamaRaw(array $messages, float $temperature, array $opts = []): string
+    {
+        $ollamaRoot = (string) preg_replace('#/v1/?$#', '', rtrim($this->baseUrl, '/'));
+        $rawPrompt = $this->buildChatMlPrompt($messages);
+
+        $payload = [
+            'model' => $this->chatModel,
+            'prompt' => $rawPrompt,
+            'raw' => true,
+            'stream' => false,
+            'options' => [
+                'temperature' => $temperature,
+                'num_ctx' => 8192,
+            ],
+        ];
+
+        if (isset($opts['format'])) {
+            $payload['format'] = $opts['format'];
+        }
+
+        try {
+            $response = Http::timeout($this->timeoutSeconds)
+                ->acceptJson()
+                ->post($ollamaRoot . '/api/generate', $payload);
+        } catch (Throwable $e) {
+            throw new ApiException(
+                errorCode: 'LLM_UNAVAILABLE',
+                message: 'Không thể kết nối tới dịch vụ AI (Ollama): ' . $e->getMessage(),
+                statusCode: 503
+            );
+        }
+
+        if (! $response->successful()) {
+            throw new ApiException(
+                errorCode: 'LLM_UNAVAILABLE',
+                message: 'Dịch vụ AI trả về mã lỗi HTTP ' . $response->status(),
+                statusCode: 503
+            );
+        }
+
+        $content = (string) data_get($response->json(), 'response', '');
+
+        return trim((string) preg_replace('/<think>.*?<\/think>/s', '', $content));
+    }
+
+    /**
+     * Tạo chuỗi ChatML chuẩn cho dòng model Qwen3 với khối <think></think> rỗng được đóng sẵn.
+     *
+     * @param array<int, array{role: string, content: string}> $messages
+     */
+    private function buildChatMlPrompt(array $messages): string
+    {
+        $parts = [];
+        foreach ($messages as $msg) {
+            $role = $msg['role'] ?? 'user';
+            $content = trim((string) ($msg['content'] ?? ''));
+            $parts[] = "<|im_start|>{$role}\n{$content}<|im_end|>";
+        }
+        $parts[] = "<|im_start|>assistant\n<think>\n\n</think>\n\n";
+
+        return implode("\n", $parts);
+    }
+
+    /**
+     * Kiểm tra xem baseUrl hiện tại có phải là Ollama cục bộ hay không.
+     */
+    private function isOllamaEndpoint(): bool
+    {
+        $lower = strtolower($this->baseUrl);
+
+        return str_contains($lower, '11434') || str_contains($lower, 'ollama');
     }
 
     /**

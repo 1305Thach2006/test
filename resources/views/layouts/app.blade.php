@@ -46,7 +46,7 @@
             <a href="{{ route('landing') }}" class="flex items-center gap-2.5 font-bold text-lg tracking-tight text-indigo-600 dark:text-indigo-400">
                 <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-600 text-white font-extrabold shadow-sm">AI</span>
                 <span class="truncate">Career Coach</span>
-                <span class="hidden md:inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">Apache-2.0</span>
+
             </a>
 
             <nav class="flex items-center gap-1 sm:gap-3 text-sm font-medium">

@@ -45,6 +45,40 @@ class SkillNormalizerService
     }
 
     /**
+     * Làm sạch đoạn trích nếu model ghép tiền tố (VD: "Core Tech: ...") hoặc nối nhiều đoạn bằng dấu phẩy,
+     * đảm bảo trả về đoạn con xuất hiện nguyên văn trong văn bản gốc (nếu có).
+     */
+    public static function resolveVerbatimEvidence(string $evidence, string $rawName, string $sourceText): string
+    {
+        $trimmed = trim($evidence);
+        if (self::verifyEvidenceInSource($trimmed, $sourceText)) {
+            return $trimmed;
+        }
+
+        // Thử bỏ tiền tố kiểu "Core Tech:", "Skills:" ở đầu câu
+        $withoutPrefix = trim((string) preg_replace('/^[A-Za-zÀ-ỹ\s\/\-]+:\s*/u', '', $trimmed));
+        if ($withoutPrefix !== '' && self::verifyEvidenceInSource($withoutPrefix, $sourceText)) {
+            return $withoutPrefix;
+        }
+
+        // Thử tách theo dấu chấm phẩy hoặc dấu phẩy nếu model nối 2 đoạn khác nhau
+        $parts = preg_split('/[;,]+/u', $withoutPrefix !== '' ? $withoutPrefix : $trimmed) ?: [];
+        foreach ($parts as $part) {
+            $candidate = trim($part);
+            if (mb_strlen($candidate) >= 3 && self::verifyEvidenceInSource($candidate, $sourceText)) {
+                return $candidate;
+            }
+        }
+
+        // Nếu chính tên kỹ năng xuất hiện nguyên văn trong văn bản gốc
+        if (mb_strlen(trim($rawName)) >= 3 && self::verifyEvidenceInSource($rawName, $sourceText)) {
+            return trim($rawName);
+        }
+
+        return $trimmed;
+    }
+
+    /**
      * Chuẩn hoá tên kỹ năng để so khớp tầng 1 (Alias): chữ thường, bỏ dấu, bỏ hậu tố .js / js.
      */
     public static function normalizeAliasKey(string $skillName): string
@@ -58,6 +92,38 @@ class SkillNormalizerService
         $clean = (string) preg_replace('/[^a-z0-9+#]+/i', '', $clean);
 
         return trim($clean);
+    }
+
+    /**
+     * Sinh danh sách các khoá chuẩn hoá mở rộng cho tên kỹ năng (bỏ ghi chú ngoặc đơn, hậu tố phiên bản, số nhiều).
+     *
+     * @return array<int, string>
+     */
+    private static function expandAliasKeys(string $rawName): array
+    {
+        $keys = [];
+        $primary = self::normalizeAliasKey($rawName);
+        if ($primary !== '') {
+            $keys[] = $primary;
+        }
+
+        // Bỏ phần trong ngoặc đơn: "React.js (React 19)" -> "React.js"
+        $noParens = trim((string) preg_replace('/\s*\([^)]*\)/u', '', $rawName));
+        // Bỏ số phiên bản ở cuối: "Laravel 12", "PHP 8.2/8.3", "Node.js 24"
+        $noVersion = trim((string) preg_replace('/[\s\/\-]+v?\d+(?:[.\-\/]\d+)*\+?$/i', '', $noParens));
+        foreach ([$noParens, $noVersion] as $variant) {
+            $k = self::normalizeAliasKey($variant);
+            if ($k !== '' && ! in_array($k, $keys, true)) {
+                $keys[] = $k;
+            }
+            // Chuẩn hoá "restfulapi" / "restfulapis" -> "restapi"
+            $kRest = (string) preg_replace('/^restfulapi(?:s)?$/', 'restapi', $k);
+            if ($kRest !== '' && ! in_array($kRest, $keys, true)) {
+                $keys[] = $kRest;
+            }
+        }
+
+        return $keys;
     }
 
     /**
@@ -82,7 +148,7 @@ class SkillNormalizerService
             ];
         }
 
-        $targetKey = self::normalizeAliasKey($rawName);
+        $targetKeys = self::expandAliasKeys($rawName);
 
         // TẦNG 1: Khớp chính xác theo slug, name hoặc aliases[] sau khi chuẩn hoá
         foreach ($skills as $skill) {
@@ -92,7 +158,8 @@ class SkillNormalizerService
             );
 
             foreach ($candidates as $candidate) {
-                if ($targetKey !== '' && self::normalizeAliasKey((string) $candidate) === $targetKey) {
+                $candidateKey = self::normalizeAliasKey((string) $candidate);
+                if ($candidateKey !== '' && in_array($candidateKey, $targetKeys, true)) {
                     return [
                         'skill' => $skill,
                         'canonical_slug' => $skill->slug,

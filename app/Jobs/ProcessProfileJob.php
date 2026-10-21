@@ -85,11 +85,13 @@ class ProcessProfileJob implements ShouldQueue
 
             foreach ($extracted['skills'] as $item) {
                 $rawName = trim((string) ($item['name'] ?? ''));
-                $evidence = trim((string) ($item['evidence'] ?? ''));
+                $rawEvidence = trim((string) ($item['evidence'] ?? ''));
 
-                if ($rawName === '' || $evidence === '') {
+                if ($rawName === '' || $rawEvidence === '') {
                     continue;
                 }
+
+                $evidence = SkillNormalizerService::resolveVerbatimEvidence($rawEvidence, $rawName, $profile->raw_text);
 
                 // Bắt buộc: Bỏ mọi mục có evidence KHÔNG xuất hiện nguyên văn trong văn bản gốc (mục 1.6 & 4.2.1 PLAN.md)
                 if (! SkillNormalizerService::verifyEvidenceInSource($evidence, $profile->raw_text)) {

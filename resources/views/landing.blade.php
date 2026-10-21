@@ -7,12 +7,6 @@
     <!-- Phần Hero chính với nút "Bắt đầu" và "Dùng CV mẫu" theo mục 4.7 PLAN.md -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 lg:pt-20 lg:pb-24">
         <div class="text-center max-w-3xl mx-auto">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-semibold mb-6">
-                <span>100% Open Source (Apache-2.0)</span>
-                <span>•</span>
-                <span>Local AI với Ollama ({{ config('ai.model') }} + {{ config('ai.embed_model') }})</span>
-            </div>
-
             <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
                 {{ __('Cố vấn Nghề nghiệp AI Nguồn mở cho Sinh viên') }}
             </h1>

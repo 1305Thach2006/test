@@ -190,7 +190,7 @@
     }
 
     async function pollJobUntilDone(jobId, statusPrefix) {
-        for (let i = 0; i < 90; i++) {
+        for (let i = 0; i < 180; i++) {
             const res = await fetch(`/api/v1/jobs/${jobId}`, { headers: { 'Accept': 'application/json' } });
             const data = await res.json();
             if (!res.ok) {
@@ -283,7 +283,7 @@
                     jobTargetId: jdData.jobTargetId
                 })
             });
-            const repData = await repRes.json();
+            const repData = await repRes.ok ? await repRes.json() : await repRes.json();
             if (!repRes.ok) {
                 throw new Error(repData?.error?.message || 'Không thể tạo báo cáo Skill Gap.');
             }

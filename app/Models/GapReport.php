@@ -43,7 +43,7 @@ class GapReport extends Model
 
     public function roadmap(): HasOne
     {
-        return $this->hasOne(Roadmap::class, 'gap_report_id')->latestOfMany();
+        return $this->hasOne(Roadmap::class, 'gap_report_id')->latest('created_at');
     }
 
     public function interviewSessions(): HasMany

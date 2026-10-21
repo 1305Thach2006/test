@@ -119,11 +119,13 @@ class ProcessJobTargetJob implements ShouldQueue
 
             foreach ($extracted['requirements'] as $req) {
                 $rawName = trim((string) ($req['name'] ?? ''));
-                $evidence = trim((string) ($req['evidence'] ?? ''));
+                $rawEvidence = trim((string) ($req['evidence'] ?? ''));
 
-                if ($rawName === '' || $evidence === '') {
+                if ($rawName === '' || $rawEvidence === '') {
                     continue;
                 }
+
+                $evidence = SkillNormalizerService::resolveVerbatimEvidence($rawEvidence, $rawName, $jobTarget->jd_text);
 
                 // Kiểm tra đoạn trích evidence phải tồn tại thực sự trong JD gốc (mục 4.2.1 PLAN.md)
                 if (! SkillNormalizerService::verifyEvidenceInSource($evidence, $jobTarget->jd_text)) {
