@@ -150,8 +150,8 @@ class FakeLlmProvider implements LlmProviderInterface
     {
         $pattern = sprintf('/<%s>(.*?)<\/%s>/s', preg_quote($tag, '/'), preg_quote($tag, '/'));
         $rawText = '';
-        if (preg_match($pattern, $prompt, $matches)) {
-            $rawText = trim($matches[1]);
+        if (preg_match_all($pattern, $prompt, $matches) && ! empty($matches[1])) {
+            $rawText = trim((string) end($matches[1]));
         }
 
         $knownPatterns = [
@@ -246,8 +246,8 @@ class FakeLlmProvider implements LlmProviderInterface
     private function gradeAnswerDeterministically(string $prompt): array
     {
         $answer = '';
-        if (preg_match('/<answer>(.*?)<\/answer>/s', $prompt, $m)) {
-            $answer = trim($m[1]);
+        if (preg_match_all('/<answer>(.*?)<\/answer>/s', $prompt, $m) && ! empty($m[1])) {
+            $answer = trim((string) end($m[1]));
         }
 
         $wordCount = count(preg_split('/\s+/u', $answer, -1, PREG_SPLIT_NO_EMPTY) ?: []);

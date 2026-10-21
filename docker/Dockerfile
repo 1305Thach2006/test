@@ -13,9 +13,8 @@ RUN npm run build
 # Giai đoạn 2: Cài đặt thư viện PHP qua Composer (cố định mục tiêu PHP 8.3 khớp với runtime)
 FROM composer:2.8 AS vendor-builder
 WORKDIR /app
-COPY composer.json ./
-RUN composer config platform.php 8.3.35 \
-    && composer install --no-dev --no-interaction --no-scripts --prefer-dist --optimize-autoloader
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --no-scripts --prefer-dist --optimize-autoloader
 
 # Giai đoạn 3: Image thực thi PHP 8.3 CLI/Web Alpine nhẹ và an toàn
 FROM php:8.3-cli-alpine AS runtime
