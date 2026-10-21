@@ -1,0 +1,13 @@
+{
+  "AI Career Coach": "AI Career Coach",
+  "Trang chủ": "Home",
+  "Bắt đầu phân tích": "Start Analysis",
+  "Dùng CV mẫu": "Use Sample CV",
+  "Cài đặt": "Settings",
+  "Tài liệu API": "API Docs",
+  "Đang tải model AI…": "Downloading AI models (qwen3:4b & bge-m3)… Analysis tasks will start once ready.",
+  "Cố vấn Nghề nghiệp AI Nguồn mở cho Sinh viên": "Open-Source AI Career Coach for Students",
+  "Phân tích khoảng cách kỹ năng từ CV & JD với trích dẫn nguyên văn, gợi ý lộ trình học tập RAG chuẩn xác và luyện phỏng vấn thích ứng — hoàn toàn chạy local với Ollama.": "Analyze skill gaps between your CV & target JD with verbatim evidence citations, build RAG-grounded study roadmaps, and practice adaptive mock interviews — 100% local via Ollama.",
+  "Đã lưu cài đặt thành công!": "Settings saved successfully!",
+  "Đã xoá toàn bộ hồ sơ CV và dữ liệu liên quan.": "All CV profiles and related records have been purged."
+}
